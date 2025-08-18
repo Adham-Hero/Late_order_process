@@ -1,3 +1,16 @@
+document.getElementById("addRiderBtn").addEventListener("click", () => {
+  const riderDiv = document.createElement("div");
+  riderDiv.classList.add("rider", "border", "rounded", "p-3", "mb-2");
+  riderDiv.innerHTML = `
+    <label>Queued Time: <input type="time" class="form-control queued"></label>
+    <label>Accepted Time: <input type="time" class="form-control accepted"></label>
+    <label>Committed Pickup Time: <input type="time" class="form-control committed"></label>
+    <label>Near Pickup Time: <input type="time" class="form-control nearpickup"></label>
+    <label>Picked Up Time: <input type="time" class="form-control pickedup"></label>
+    <label>Est. Dropoff Departure: <input type="time" class="form-control dropoff"></label>
+  `;
+  document.getElementById("ridersContainer").appendChild(riderDiv);
+});
 document.getElementById("calculateBtn").addEventListener("click", () => {
   const riders = document.querySelectorAll(".rider");
   let totalDispatchingTime = 0;
