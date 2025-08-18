@@ -17,13 +17,9 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
   let totalDispatchingTime = 0;
   let delays = [];
   let cancellationReason = "";
-
   let hasMultipleRiders = riders.length > 1;
   let firstRiderIssue = false;
-
   let timelineHTML = "<h5>Timeline:</h5>";
-
-  // الوقت الحالي من input
   const currentTimeInput = document.getElementById("currentTime").value;
 
   riders.forEach((rider, index) => {
@@ -37,7 +33,6 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
     timelineHTML += `<div class="border rounded p-2 mb-2">
       <strong>Rider ${index + 1}:</strong><br>`;
 
-    // Show only existing stages
     if (queued) timelineHTML += `Queued: ${queued}<br>`;
     if (accepted) timelineHTML += `Accepted: ${accepted}<br>`;
     if (committed) timelineHTML += `Committed Pickup: ${committed}<br>`;
@@ -45,14 +40,12 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
     if (pickedup) timelineHTML += `Picked Up: ${pickedup}<br>`;
     if (dropoff) timelineHTML += `Est. Dropoff Departure: ${dropoff}<br>`;
 
-    // Dispatching Time
     if (queued && accepted) {
       let dispatchTime = diffMinutes(queued, accepted);
       totalDispatchingTime += dispatchTime;
       timelineHTML += `<em>Dispatching Time: ${dispatchTime} mins</em><br>`;
     }
 
-    // Delay logic
     if (committed && pickedup) {
       let d = diffMinutes(committed, pickedup);
       delays.push(d);
@@ -63,9 +56,7 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
       timelineHTML += `<em>Delay (Near Pickup → Picked Up): ${d} mins</em><br>`;
     }
 
-    // Dropoff Delay logic
     if (dropoff && pickedup) {
-      // الحالة العادية
       let dropoffDelay = diffMinutes(pickedup, dropoff);
       if (dropoffDelay > 0) {
         delays.push(dropoffDelay);
@@ -74,7 +65,6 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
         timelineHTML += `<em>Driving Time: ${Math.abs(dropoffDelay)} mins</em><br>`;
       }
     } else if (dropoff && currentTimeInput) {
-      // الحالة الخاصة: الطلب اتلغى قبل التسليم
       let diffNow = diffMinutes(dropoff, currentTimeInput);
       if (diffNow < 0) {
         delays.push(Math.abs(diffNow));
@@ -84,7 +74,6 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
       }
     }
 
-    // Detect issue with first rider
     if (index === 0) {
       if ((accepted && !pickedup) || (queued && !accepted)) {
         firstRiderIssue = true;
@@ -95,7 +84,6 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
     timelineHTML += `</div>`;
   });
 
-  // Cancellation Reason
   let riderReachable = document.getElementById("riderReachable").value;
   let maxDelay = Math.max(totalDispatchingTime, ...(delays.length ? delays : [0]));
 
@@ -111,7 +99,6 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
     cancellationReason = "Preparation Delay";
   }
 
-  // Results HTML
   let resultHTML = timelineHTML;
   resultHTML += `<h5>Summary:</h5>`;
   if (totalDispatchingTime > 0) {
