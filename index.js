@@ -57,20 +57,19 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
     }
 
     if (dropoff && pickedup) {
-      let dropoffDelay = diffMinutes(pickedup, dropoff);
-      if (dropoffDelay > 0) {
-        delays.push(dropoffDelay);
-        timelineHTML += `<em>Dropoff Delay: ${dropoffDelay} mins</em><br>`;
-      } else {
-        timelineHTML += `<em>Driving Time: ${Math.abs(dropoffDelay)} mins</em><br>`;
+      let driving = diffMinutes(pickedup, dropoff);
+      if (driving >= 0) {
+        timelineHTML += `<em>Driving Time: ${driving} mins</em><br>`;
       }
-    } else if (dropoff && currentTimeInput) {
-      let diffNow = diffMinutes(dropoff, currentTimeInput);
-      if (diffNow < 0) {
-        delays.push(Math.abs(diffNow));
-        timelineHTML += `<em>Current Dropoff Delay: ${Math.abs(diffNow)} mins (order cancelled before delivery)</em><br>`;
+    }
+
+    if (dropoff && currentTimeInput) {
+      let currentDelay = diffMinutes(dropoff, currentTimeInput);
+      if (currentDelay > 0) {
+        delays.push(currentDelay);
+        timelineHTML += `<em>Current Dropoff Delay: ${currentDelay} mins</em><br>`;
       } else {
-        timelineHTML += `<em>No Dropoff Delay yet (current time before Est. Dropoff)</em><br>`;
+        timelineHTML += `<em>No Dropoff Delay yet</em><br>`;
       }
     }
 
