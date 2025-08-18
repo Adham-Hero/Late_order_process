@@ -11,6 +11,7 @@ document.getElementById("addRiderBtn").addEventListener("click", () => {
   `;
   document.getElementById("ridersContainer").appendChild(riderDiv);
 });
+
 document.getElementById("calculateBtn").addEventListener("click", () => {
   const riders = document.querySelectorAll(".rider");
   let totalDispatchingTime = 0;
@@ -21,6 +22,9 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
   let firstRiderIssue = false;
 
   let timelineHTML = "<h5>Timeline:</h5>";
+
+  // الوقت الحالي من input
+  const currentTimeInput = document.getElementById("currentTime").value;
 
   riders.forEach((rider, index) => {
     const queued = rider.querySelector(".queued").value;
@@ -59,12 +63,24 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
       timelineHTML += `<em>Delay (Near Pickup → Picked Up): ${d} mins</em><br>`;
     }
 
-    // Dropoff Delay
+    // Dropoff Delay logic
     if (dropoff && pickedup) {
+      // الحالة العادية
       let dropoffDelay = diffMinutes(pickedup, dropoff);
       if (dropoffDelay > 0) {
         delays.push(dropoffDelay);
         timelineHTML += `<em>Dropoff Delay: ${dropoffDelay} mins</em><br>`;
+      } else {
+        timelineHTML += `<em>Driving Time: ${Math.abs(dropoffDelay)} mins</em><br>`;
+      }
+    } else if (dropoff && currentTimeInput) {
+      // الحالة الخاصة: الطلب اتلغى قبل التسليم
+      let diffNow = diffMinutes(dropoff, currentTimeInput);
+      if (diffNow < 0) {
+        delays.push(Math.abs(diffNow));
+        timelineHTML += `<em>Current Dropoff Delay: ${Math.abs(diffNow)} mins (order cancelled before delivery)</em><br>`;
+      } else {
+        timelineHTML += `<em>No Dropoff Delay yet (current time before Est. Dropoff)</em><br>`;
       }
     }
 
