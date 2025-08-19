@@ -1,3 +1,17 @@
+document.getElementById("addRiderBtn").addEventListener("click", () => {
+  const riderDiv = document.createElement("div");
+  riderDiv.classList.add("rider", "border", "rounded", "p-3", "mb-2");
+  riderDiv.innerHTML = `
+    <label>Queued Time: <input type="text" placeholder="0:00 AM/PM" class="form-control queued"></label>
+    <label>Accepted Time: <input type="text" placeholder="0:00 AM/PM" class="form-control accepted"></label>
+    <label>Committed Pickup Time: <input type="text" placeholder="00:00 AM/PM" class="form-control committed"></label>
+    <label>Near Pickup Time: <input type="text" placeholder="0:00 AM/PM" class="form-control nearpickup"></label>
+    <label>Picked Up Time: <input type="text" placeholder="0:00 AM/PM" class="form-control pickedup"></label>
+    <label>Est. Dropoff Departure: <input type="text" placeholder="00:00 AM/PM Estimated dropoff" class="form-control dropoff"></label>
+  `;
+  document.getElementById("ridersContainer").appendChild(riderDiv);
+});
+
 document.getElementById("calculateBtn").addEventListener("click", () => {
   const riders = document.querySelectorAll(".rider");
   let totalDispatchingTime = 0;
@@ -7,6 +21,7 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
   let firstRiderIssue = false;
   let timelineHTML = "<h5>Timeline:</h5>";
   const currentTimeInput = document.getElementById("currentTime").value;
+  const riderReachable = document.getElementById("riderReachable").value;
 
   let groupedDelays = {
     "Dispatching Delay": 0,
@@ -72,10 +87,23 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
       }
     }
 
+    if (index < riders.length - 1) {
+      let nextRider = riders[index + 1];
+      let nextQueued = nextRider.querySelector(".queued").value;
+      let lastTime = dropoff || pickedup || nearpickup || committed || accepted || queued;
+
+      if (lastTime && nextQueued) {
+        let gap = diffMinutes(lastTime, nextQueued);
+        if (gap > 0) {
+          groupedDelays["Rider Delay"] += gap;
+          timelineHTML += `<em style="color:orange;">Gap until Rider ${index + 2} queued: ${gap} mins (counted as Rider Delay)</em><br>`;
+        }
+      }
+    }
+
     timelineHTML += `</div>`;
   });
 
-  // biggest delay
   let biggestDelayType = "";
   let biggestDelayValue = 0;
   Object.keys(groupedDelays).forEach(type => {
@@ -85,16 +113,20 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
     }
   });
 
-  // check if rider unreachable
-  const riderReachable = document.getElementById("riderReachable").value;
-  if (riderReachable === "no") {
-    cancellationReason = "Rider Unreachable";
-  } else {
-    if (hasMultipleRiders && firstRiderIssue) {
-      cancellationReason = "Order picked up/delivered by another rider";
-    } else {
-      cancellationReason = biggestDelayType || "Preparation Delay";
+  Object.keys(groupedDelays).forEach(type => {
+    if (groupedDelays[type] > 0) {
+      timelineHTML += `<em style="${biggestDelayType === type ? 'color:red; font-weight:bold;' : ''}">
+        ${type}: ${groupedDelays[type]} mins
+      </em><br>`;
     }
+  });
+
+  if (riderReachable === "no" && biggestDelayType === "Rider Delay") {
+    cancellationReason = "Rider Unreachable";
+  } else if (hasMultipleRiders && firstRiderIssue) {
+    cancellationReason = "Order picked up/delivered by another rider";
+  } else {
+    cancellationReason = biggestDelayType || "Preparation Delay";
   }
 
   let resultHTML = timelineHTML;
@@ -114,3 +146,26 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
 
   document.getElementById("result").innerHTML = resultHTML;
 });
+
+function parseTime(timeStr) {
+  if (!timeStr) return null;
+  let parts = timeStr.trim().split(" ");
+  let timePart = parts[0];
+  let ampm = parts[1] ? parts[1].toUpperCase() : null;
+
+  let [h, m, s] = timePart.split(":").map(Number);
+  if (isNaN(s)) s = 0;
+
+  if (ampm === "PM" && h < 12) h += 12;
+  if (ampm === "AM" && h === 12) h = 0;
+
+  return h * 60 + m + (s / 60);
+}
+
+function diffMinutes(start, end) {
+  let startMinutes = parseTime(start);
+  let endMinutes = parseTime(end);
+  if (startMinutes == null || endMinutes == null) return 0;
+  if (endMinutes < startMinutes) endMinutes += 24 * 60;
+  return Math.round(endMinutes - startMinutes);
+}
