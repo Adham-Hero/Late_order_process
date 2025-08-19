@@ -57,11 +57,10 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
 
     if (dropoff && pickedup) {
       let driving = diffMinutes(pickedup, dropoff);
-      if (driving >= 0) {
-        timelineHTML += `<em>Driving Time: ${driving} mins</em><br>`;
-      } else {
-        timelineHTML += `<em>Dropoff time already passed by ${-driving} mins</em><br>`;
-      }
+      if (driving >= 0) timelineHTML += `<em>Driving Time: ${driving} mins</em><br>`;
+      let remaining = diffMinutes(currentTimeInput, dropoff);
+      if (remaining >= 0) timelineHTML += `<em>Time Remaining to Dropoff: ${remaining} mins</em><br>`;
+      else timelineHTML += `<em>Dropoff time passed</em><br>`;
     }
 
     if (pickedup && currentTimeInput) {
@@ -85,17 +84,11 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
   let riderReachable = document.getElementById("riderReachable").value;
   let maxDelay = Math.max(totalDispatchingTime, ...(delays.length ? delays : [0]));
 
-  if (hasMultipleRiders && firstRiderIssue) {
-    cancellationReason = "Order picked up/delivered by another rider";
-  } else if (maxDelay === totalDispatchingTime && totalDispatchingTime > 0) {
-    cancellationReason = "Lack of Delivery Men";
-  } else if (riderReachable === "yes" && delays.length > 0) {
-    cancellationReason = "Late Delivery";
-  } else if (riderReachable === "no") {
-    cancellationReason = "Rider Unreachable";
-  } else {
-    cancellationReason = "Preparation Delay";
-  }
+  if (hasMultipleRiders && firstRiderIssue) cancellationReason = "Order picked up/delivered by another rider";
+  else if (maxDelay === totalDispatchingTime && totalDispatchingTime > 0) cancellationReason = "Lack of Delivery Men";
+  else if (riderReachable === "yes" && delays.length > 0) cancellationReason = "Late Delivery";
+  else if (riderReachable === "no") cancellationReason = "Rider Unreachable";
+  else cancellationReason = "Preparation Delay";
 
   let resultHTML = timelineHTML;
   resultHTML += `<h5>Summary:</h5>`;
@@ -120,5 +113,8 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
 function diffMinutes(start, end) {
   const [sh, sm] = start.split(":").map(Number);
   const [eh, em] = end.split(":").map(Number);
-  return (eh * 60 + em) - (sh * 60 + sm);
+  let startMinutes = sh * 60 + sm;
+  let endMinutes = eh * 60 + em;
+  if (endMinutes < startMinutes) endMinutes += 24 * 60;
+  return endMinutes - startMinutes;
 }
