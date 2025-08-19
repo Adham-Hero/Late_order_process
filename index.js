@@ -106,9 +106,20 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
   if (delays.length > 0) {
     resultHTML += `<p>Delays: ${delays.join(", ")} mins</p>`;
   }
-  resultHTML += `<p><strong>Cancellation Reason:</strong> ${cancellationReason}</p>`;
+  resultHTML += `<p><strong>Cancellation Reason:</strong> <span id="reasonText">${cancellationReason}</span></p>`;
+
+  if (cancellationReason === "Late Delivery") {
+    resultHTML += `<button id="changeReasonBtn" class="btn btn-warning btn-sm mt-2">Change to Preparation Delay</button>`;
+  }
 
   document.getElementById("result").innerHTML = resultHTML;
+
+  const changeBtn = document.getElementById("changeReasonBtn");
+  if (changeBtn) {
+    changeBtn.addEventListener("click", () => {
+      document.getElementById("reasonText").innerText = "Preparation Delay";
+    });
+  }
 });
 
 function diffMinutes(start, end) {
