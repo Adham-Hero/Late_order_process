@@ -4,15 +4,23 @@ document.getElementById("addRiderBtn").addEventListener("click", () => {
   riderDiv.innerHTML = `
     <label>Queued Time: <input type="text" placeholder="0:00 AM/PM" class="form-control queued"></label>
     <label>Accepted Time: <input type="text" placeholder="0:00 AM/PM" class="form-control accepted"></label>
-    <label>Committed Pickup Time: <input type="text" placeholder="00:00 AM/PM" class="form-control committed"></label>
+    <label>Committed Pickup Time: <input type="text" placeholder="0:00 AM/PM" class="form-control committed"></label>
     <label>Near Pickup Time: <input type="text" placeholder="0:00 AM/PM" class="form-control nearpickup"></label>
     <label>Picked Up Time: <input type="text" placeholder="0:00 AM/PM" class="form-control pickedup"></label>
-    <label>Est. Dropoff Departure: <input type="text" placeholder="00:00 AM/PM Estimated dropoff" class="form-control dropoff"></label>
+    <label>Est. Dropoff Departure: <input type="text" placeholder="0:00 AM/PM Estimated dropoff" class="form-control dropoff"></label>
   `;
   document.getElementById("ridersContainer").appendChild(riderDiv);
+  const vertical = document.getElementById("vertical").value;
+  const riders = document.querySelectorAll(".rider");
+  if (vertical === "NFV" && riders.length === 1 && !riderDiv.querySelector(".scheduled")) {
+    const scheduledInput = document.createElement("label");
+    scheduledInput.innerHTML = `Scheduled Time: <input type="text" placeholder="0:00 AM/PM" class="form-control scheduled">`;
+    riderDiv.insertBefore(scheduledInput, riderDiv.firstChild);
+  }
 });
 
 document.getElementById("calculateBtn").addEventListener("click", () => {
+  const vertical = document.getElementById("vertical").value;
   const riders = document.querySelectorAll(".rider");
   let totalDispatchingTime = 0;
   let delays = [];
@@ -37,8 +45,14 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
     const pickedup = rider.querySelector(".pickedup").value;
     const dropoff = rider.querySelector(".dropoff").value;
 
+    let scheduled = null;
+    if (vertical === "NFV" && index === 0) {
+      scheduled = rider.querySelector(".scheduled")?.value;
+    }
+
     timelineHTML += `<div class="border rounded p-2 mb-2">
       <strong>Rider ${index + 1}:</strong><br>`;
+    if (scheduled) timelineHTML += `Scheduled: ${scheduled}<br>`;
     if (queued) timelineHTML += `Queued: ${queued}<br>`;
     if (accepted) timelineHTML += `Accepted: ${accepted}<br>`;
     if (committed) timelineHTML += `Committed Pickup: ${committed}<br>`;
@@ -48,8 +62,15 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
 
     if (queued && accepted) {
       let dispatchTime = diffMinutes(queued, accepted);
+      if (vertical === "NFV" && scheduled) {
+        let prepTime = diffMinutes(scheduled, queued);
+        if (prepTime > 0) groupedDelays["Preparation Delay"] += prepTime;
+        let realDispatch = diffMinutes(queued, accepted);
+        groupedDelays["Dispatching Delay"] += realDispatch;
+      } else {
+        groupedDelays["Dispatching Delay"] += dispatchTime;
+      }
       totalDispatchingTime += dispatchTime;
-      groupedDelays["Dispatching Delay"] += dispatchTime;
     }
 
     if (committed && pickedup) {
@@ -91,12 +112,11 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
       let nextRider = riders[index + 1];
       let nextQueued = nextRider.querySelector(".queued").value;
       let lastTime = dropoff || pickedup || nearpickup || committed || accepted || queued;
-
       if (lastTime && nextQueued) {
         let gap = diffMinutes(lastTime, nextQueued);
         if (gap > 0) {
           groupedDelays["Rider Delay"] += gap;
-          timelineHTML += `<em style="color:orange;">Gap until Rider ${index + 2} queued: ${gap} mins (counted as Rider Delay)</em><br>`;
+          timelineHTML += `<em style="color:orange;">Gap until Rider ${index + 2} queued: ${gap} mins</em><br>`;
         }
       }
     }
@@ -152,13 +172,10 @@ function parseTime(timeStr) {
   let parts = timeStr.trim().split(" ");
   let timePart = parts[0];
   let ampm = parts[1] ? parts[1].toUpperCase() : null;
-
   let [h, m, s] = timePart.split(":").map(Number);
   if (isNaN(s)) s = 0;
-
   if (ampm === "PM" && h < 12) h += 12;
   if (ampm === "AM" && h === 12) h = 0;
-
   return h * 60 + m + (s / 60);
 }
 
