@@ -58,15 +58,6 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
     if (dropoff && pickedup) {
       let driving = diffMinutes(pickedup, dropoff);
       if (driving >= 0) timelineHTML += `<em>Driving Time: ${driving} mins</em><br>`;
-
-      if (currentTimeInput) {
-        let remaining = diffMinutes(currentTimeInput, dropoff);
-        if (remaining >= 0) {
-          timelineHTML += `<em>Time Remaining to Dropoff: ${remaining} mins</em><br>`;
-        } else {
-          timelineHTML += `<em>Dropoff time passed</em><br>`;
-        }
-      }
     }
 
     if (pickedup && currentTimeInput) {
@@ -96,25 +87,42 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
   else if (riderReachable === "no") cancellationReason = "Rider Unreachable";
   else cancellationReason = "Preparation Delay";
 
+  // 🔹 الشرط الجديد: لو السائق Near Pickup و committed متأخر
+  let lastRider = riders[riders.length - 1];
+  let lastStateIsNearPickup = lastRider.querySelector(".nearpickup").value && !lastRider.querySelector(".pickedup").value;
+  let committedTime = lastRider.querySelector(".committed").value;
+
+  let toggleAllowed = false;
+  if (lastStateIsNearPickup && committedTime && currentTimeInput) {
+    let committedDelay = diffMinutes(committedTime, currentTimeInput);
+    if (committedDelay > 0) {
+      cancellationReason = "Preparation Delay";
+      toggleAllowed = true;
+    }
+  }
+
   let resultHTML = timelineHTML;
   resultHTML += `<h5>Summary:</h5>`;
   if (totalDispatchingTime > 0) resultHTML += `<p>Total Dispatching Time: ${totalDispatchingTime} mins</p>`;
   if (delays.length > 0) resultHTML += `<p>Delays: ${delays.join(", ")} mins</p>`;
   resultHTML += `<p><strong>Cancellation Reason:</strong> <span id="reasonText">${cancellationReason}</span></p>`;
 
-  let lastRider = riders[riders.length - 1];
-  let lastStateIsNearPickup = lastRider.querySelector(".nearpickup").value && !lastRider.querySelector(".pickedup").value;
-
-  if (cancellationReason === "Late Delivery" && lastStateIsNearPickup) {
-    resultHTML += `<button id="changeReasonBtn" class="btn btn-warning btn-sm mt-2">Change to Preparation Delay</button>`;
+  // 🔹 زرار التبديل يظهر بس في الحالة دي
+  if (toggleAllowed) {
+    resultHTML += `<button id="toggleReasonBtn" class="btn btn-warning btn-sm mt-2">Toggle Reason</button>`;
   }
 
   document.getElementById("result").innerHTML = resultHTML;
 
-  const changeBtn = document.getElementById("changeReasonBtn");
-  if (changeBtn) {
-    changeBtn.addEventListener("click", () => {
-      document.getElementById("reasonText").innerText = "Preparation Delay";
+  const toggleBtn = document.getElementById("toggleReasonBtn");
+  if (toggleBtn) {
+    toggleBtn.addEventListener("click", () => {
+      let reasonSpan = document.getElementById("reasonText");
+      if (reasonSpan.innerText === "Preparation Delay") {
+        reasonSpan.innerText = "Late Delivery";
+      } else {
+        reasonSpan.innerText = "Preparation Delay";
+      }
     });
   }
 });
