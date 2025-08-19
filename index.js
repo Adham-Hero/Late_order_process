@@ -1,60 +1,14 @@
-function diffMinutes(startTime, endTime) {
-    const today = new Date();
-    if (!startTime || !endTime) return 0;
-
-    const [startHourMin, startPeriod] = startTime.split(' ');
-    const [endHourMin, endPeriod] = endTime.split(' ');
-
-    let [startHour, startMin] = startHourMin.split(':').map(Number);
-    let [endHour, endMin] = endHourMin.split(':').map(Number);
-
-    if (startPeriod.toUpperCase() === 'PM' && startHour !== 12) startHour += 12;
-    if (startPeriod.toUpperCase() === 'AM' && startHour === 12) startHour = 0;
-
-    if (endPeriod.toUpperCase() === 'PM' && endHour !== 12) endHour += 12;
-    if (endPeriod.toUpperCase() === 'AM' && endHour === 12) endHour = 0;
-
-    const startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), startHour, startMin);
-    const endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), endHour, endMin);
-
-    return Math.floor((endDate - startDate) / 60000);
-}
-
-// إضافة رايدر جديد
-document.getElementById("addRiderBtn").addEventListener("click", () => {
-    const riderDiv = document.createElement("div");
-    riderDiv.classList.add("rider", "border", "rounded", "p-3", "mb-2");
-
-    riderDiv.innerHTML = `
-        <label>Queued Time: <input type="text" placeholder="0:00 AM/PM" class="form-control queued"></label>
-        <label>Accepted Time: <input type="text" placeholder="0:00 AM/PM" class="form-control accepted"></label>
-        <label>Committed Pickup Time: <input type="text" placeholder="0:00 AM/PM" class="form-control committed"></label>
-        <label>Near Pickup Time: <input type="text" placeholder="0:00 AM/PM" class="form-control nearpickup"></label>
-        <label>Picked Up Time: <input type="text" placeholder="0:00 AM/PM" class="form-control pickedup"></label>
-        <label>Est. Dropoff Departure: <input type="text" placeholder="0:00 AM/PM Estimated dropoff" class="form-control dropoff"></label>
-    `;
-
-    const vertical = document.getElementById("vertical").value;
-    const ridersContainer = document.getElementById("ridersContainer");
-    ridersContainer.appendChild(riderDiv);
-
-    const riders = document.querySelectorAll(".rider");
-
-    if (vertical === "NFV" && riders.length === 1 && !riderDiv.querySelector(".scheduled")) {
-        const scheduledInput = document.createElement("label");
-        scheduledInput.innerHTML = `Scheduled Time: <input type="text" placeholder="0:00 AM/PM" class="form-control scheduled">`;
-        riderDiv.insertBefore(scheduledInput, riderDiv.firstChild);
-    }
-});
-
-// حساب التأخيرات وعرض النتائج
 document.getElementById("calculateBtn").addEventListener("click", () => {
     const vertical = document.getElementById("vertical").value;
     const riders = document.querySelectorAll(".rider");
     const currentTimeInput = document.getElementById("currentTime").value;
     const riderReachable = document.getElementById("riderReachable").value;
 
-    let groupedDelays = { "Dispatching Delay": 0, "Rider Delay": 0, "Preparation Delay": 0 };
+    let groupedDelays = {
+        "Dispatching Delay": 0,
+        "Rider Delay": 0,
+        "Preparation Delay": 0
+    };
     let timelineHTML = "<h5>Timeline:</h5>";
     let firstRiderIssue = false;
     let hasMultipleRiders = riders.length > 1;
@@ -89,8 +43,10 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
             }
         }
 
-        // Preparation Delay حسب Committed / Near Pickup
+        // حساب التأخيرات حسب Committed / Near Pickup
         let preparationDelay = 0;
+        let driverDelay = 0;
+
         if (nearpickup && committed) {
             if (diffMinutes(nearpickup, committed) < 0) {
                 // السائق وصل قبل Committed → نحسب التحضير من Committed إلى Picked Up
@@ -99,7 +55,11 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
                     groupedDelays["Preparation Delay"] += preparationDelay;
                 }
             } else {
-                // السائق وصل بعد Committed → نحسب التحضير من Near Pickup إلى Picked Up
+                // السائق وصل بعد Committed → نحسب تأخير السائق من Committed إلى Near Pickup
+                driverDelay = diffMinutes(committed, nearpickup);
+                if (driverDelay > 0) groupedDelays["Rider Delay"] += driverDelay;
+
+                // إذا Picked Up متوفرة → نحسب التحضير من Near Pickup إلى Picked Up
                 if (pickedup && diffMinutes(nearpickup, pickedup) > 0) {
                     preparationDelay = diffMinutes(nearpickup, pickedup);
                     groupedDelays["Preparation Delay"] += preparationDelay;
@@ -112,6 +72,7 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
         }
 
         if (preparationDelay > 0) timelineHTML += `<em>Preparation Delay: ${preparationDelay} mins</em><br>`;
+        if (driverDelay > 0) timelineHTML += `<em>Driver Delay: ${driverDelay} mins</em><br>`;
 
         // Rider Delay
         if (pickedup && currentTimeInput) {
@@ -135,7 +96,7 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
 
     const delayMapping = {
         "Dispatching Delay": "Lack of Delivery Men",
-        "Rider Delay": "Late Delivery",
+        "Rider Delay": "Late Delivery / Driver Delay",
         "Preparation Delay": "Preparation Delay"
     };
 
