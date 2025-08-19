@@ -1,3 +1,27 @@
+function diffMinutes(startTime, endTime) {
+    const today = new Date();
+
+    if (!startTime || !endTime) return 0;
+
+    const [startHourMin, startPeriod] = startTime.split(' ');
+    const [endHourMin, endPeriod] = endTime.split(' ');
+
+    let [startHour, startMin] = startHourMin.split(':').map(Number);
+    let [endHour, endMin] = endHourMin.split(':').map(Number);
+
+    if (startPeriod.toUpperCase() === 'PM' && startHour !== 12) startHour += 12;
+    if (startPeriod.toUpperCase() === 'AM' && startHour === 12) startHour = 0;
+
+    if (endPeriod.toUpperCase() === 'PM' && endHour !== 12) endHour += 12;
+    if (endPeriod.toUpperCase() === 'AM' && endHour === 12) endHour = 0;
+
+    const startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), startHour, startMin);
+    const endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), endHour, endMin);
+
+    return Math.floor((endDate - startDate) / 60000);
+}
+
+// إضافة رايدر جديد
 document.getElementById("addRiderBtn").addEventListener("click", () => {
     const riderDiv = document.createElement("div");
     riderDiv.classList.add("rider", "border", "rounded", "p-3", "mb-2");
@@ -11,20 +35,20 @@ document.getElementById("addRiderBtn").addEventListener("click", () => {
         <label>Est. Dropoff Departure: <input type="text" placeholder="0:00 AM/PM Estimated dropoff" class="form-control dropoff"></label>
     `;
 
-    document.getElementById("ridersContainer").appendChild(riderDiv);
-
     const vertical = document.getElementById("vertical").value;
+    const ridersContainer = document.getElementById("ridersContainer");
+    ridersContainer.appendChild(riderDiv);
+
     const riders = document.querySelectorAll(".rider");
 
     if (vertical === "NFV" && riders.length === 1 && !riderDiv.querySelector(".scheduled")) {
         const scheduledInput = document.createElement("label");
-        scheduledInput.innerHTML = `
-            Scheduled Time: <input type="text" placeholder="0:00 AM/PM" class="form-control scheduled">
-        `;
+        scheduledInput.innerHTML = `Scheduled Time: <input type="text" placeholder="0:00 AM/PM" class="form-control scheduled">`;
         riderDiv.insertBefore(scheduledInput, riderDiv.firstChild);
     }
 });
 
+// حساب التأخيرات وعرض النتائج
 document.getElementById("calculateBtn").addEventListener("click", () => {
     const vertical = document.getElementById("vertical").value;
     const riders = document.querySelectorAll(".rider");
@@ -34,19 +58,18 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
     let totalDispatchingTime = 0;
     let delays = [];
     let groupedDelays = { "Dispatching Delay": 0, "Rider Delay": 0, "Preparation Delay": 0 };
-    let timelineHTML = "Timeline:";
+    let timelineHTML = "<h5>Timeline:</h5>";
     let firstRiderIssue = false;
     let hasMultipleRiders = riders.length > 1;
 
     riders.forEach((rider, index) => {
-        const queued = rider.querySelector(".queued").value;
-        const accepted = rider.querySelector(".accepted").value;
-        const committed = rider.querySelector(".committed").value;
-        const nearpickup = rider.querySelector(".nearpickup").value;
-        const pickedup = rider.querySelector(".pickedup").value;
-        const dropoff = rider.querySelector(".dropoff").value;
-        let scheduled = null;
-        if (vertical === "NFV" && index === 0) scheduled = rider.querySelector(".scheduled")?.value;
+        const queued = rider.querySelector(".queued")?.value;
+        const accepted = rider.querySelector(".accepted")?.value;
+        const committed = rider.querySelector(".committed")?.value;
+        const nearpickup = rider.querySelector(".nearpickup")?.value;
+        const pickedup = rider.querySelector(".pickedup")?.value;
+        const dropoff = rider.querySelector(".dropoff")?.value;
+        let scheduled = vertical === "NFV" && index === 0 ? rider.querySelector(".scheduled")?.value : null;
 
         timelineHTML += `<div class="border rounded p-2 mb-2"><strong>Rider ${index + 1}:</strong><br>`;
         if (scheduled) timelineHTML += `Scheduled: ${scheduled}<br>`;
@@ -57,7 +80,6 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
         if (pickedup) timelineHTML += `Picked Up: ${pickedup}<br>`;
         if (dropoff) timelineHTML += `Est. Dropoff Departure: ${dropoff}<br>`;
 
-        // حساب الفروقات الزمنية
         if (queued && accepted) {
             let dispatchTime = diffMinutes(queued, accepted);
             if (vertical === "NFV" && scheduled) {
@@ -70,12 +92,8 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
             totalDispatchingTime += dispatchTime;
         }
 
-        if (committed && pickedup) {
-            let d = diffMinutes(committed, pickedup);
-            delays.push(d);
-            groupedDelays["Rider Delay"] += d;
-        } else if (nearpickup && pickedup) {
-            let d = diffMinutes(nearpickup, pickedup);
+        if ((committed && pickedup) || (nearpickup && pickedup)) {
+            let d = committed && pickedup ? diffMinutes(committed, pickedup) : diffMinutes(nearpickup, pickedup);
             delays.push(d);
             groupedDelays["Rider Delay"] += d;
         }
