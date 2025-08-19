@@ -36,7 +36,6 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
             let dispatchTime = diffMinutes(queued, accepted);
             groupedDelays["Dispatching Delay"] += dispatchTime;
 
-            // Preparation Delay حسب KB
             if (vertical === "NFV" && scheduled) {
                 let prepTime = diffMinutes(scheduled, queued);
                 if (prepTime > 0) groupedDelays["Preparation Delay"] += prepTime;
@@ -49,24 +48,20 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
 
         if (nearpickup && committed) {
             if (diffMinutes(nearpickup, committed) < 0) {
-                // السائق وصل قبل Committed → نحسب التحضير من Committed إلى Picked Up
                 if (pickedup && diffMinutes(committed, pickedup) > 0) {
                     preparationDelay = diffMinutes(committed, pickedup);
                     groupedDelays["Preparation Delay"] += preparationDelay;
                 }
             } else {
-                // السائق وصل بعد Committed → نحسب تأخير السائق من Committed إلى Near Pickup
                 driverDelay = diffMinutes(committed, nearpickup);
                 if (driverDelay > 0) groupedDelays["Rider Delay"] += driverDelay;
 
-                // إذا Picked Up متوفرة → نحسب التحضير من Near Pickup إلى Picked Up
                 if (pickedup && diffMinutes(nearpickup, pickedup) > 0) {
                     preparationDelay = diffMinutes(nearpickup, pickedup);
                     groupedDelays["Preparation Delay"] += preparationDelay;
                 }
             }
         } else if (committed && pickedup && diffMinutes(committed, pickedup) > 0) {
-            // الحالة التقليدية إذا Near Pickup غير متوفرة
             preparationDelay = diffMinutes(committed, pickedup);
             groupedDelays["Preparation Delay"] += preparationDelay;
         }
@@ -122,10 +117,13 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
         resultHTML += `<p><strong>Biggest Delay:</strong> ${delayMapping[biggestDelayType]} = ${biggestDelayValue} mins</p>`;
     }
 
+    // تحديد سبب الإلغاء بشكل دقيق
+    let firstRiderCausedBiggestDelay = (biggestDelayType === "Rider Delay") && firstRiderIssue;
+
     let cancellationReason = "";
     if (riderReachable === "no" && biggestDelayType === "Rider Delay") {
         cancellationReason = "Rider Unreachable";
-    } else if (hasMultipleRiders && firstRiderIssue) {
+    } else if (hasMultipleRiders && !firstRiderCausedBiggestDelay) {
         cancellationReason = "Order picked up/delivered by another rider";
     } else {
         cancellationReason = delayMapping[biggestDelayType] || "Preparation Delay";
