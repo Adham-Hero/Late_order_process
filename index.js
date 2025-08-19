@@ -32,7 +32,6 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
 
     timelineHTML += `<div class="border rounded p-2 mb-2">
       <strong>Rider ${index + 1}:</strong><br>`;
-
     if (queued) timelineHTML += `Queued: ${queued}<br>`;
     if (accepted) timelineHTML += `Accepted: ${accepted}<br>`;
     if (committed) timelineHTML += `Committed Pickup: ${committed}<br>`;
@@ -60,24 +59,24 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
       let driving = diffMinutes(pickedup, dropoff);
       if (driving >= 0) {
         timelineHTML += `<em>Driving Time: ${driving} mins</em><br>`;
+      } else {
+        timelineHTML += `<em>Dropoff time already passed by ${-driving} mins</em><br>`;
       }
     }
 
-    if (dropoff && currentTimeInput) {
-      let currentDelay = diffMinutes(dropoff, currentTimeInput);
+    if (pickedup && currentTimeInput) {
+      let currentDelay = diffMinutes(pickedup, currentTimeInput);
       if (currentDelay > 0) {
         delays.push(currentDelay);
-        timelineHTML += `<em>Current Dropoff Delay: ${currentDelay} mins</em><br>`;
+        timelineHTML += `<em>Current Delay (Picked Up → Now): ${currentDelay} mins</em><br>`;
       } else {
-        timelineHTML += `<em>No Dropoff Delay yet</em><br>`;
+        timelineHTML += `<em>No Delay after pickup yet</em><br>`;
       }
     }
 
-    if (index === 0) {
-      if ((accepted && !pickedup) || (queued && !accepted)) {
-        firstRiderIssue = true;
-        timelineHTML += `<strong style="color:red;">Issue detected with Rider 1</strong><br>`;
-      }
+    if (index === 0 && ((accepted && !pickedup) || (queued && !accepted))) {
+      firstRiderIssue = true;
+      timelineHTML += `<strong style="color:red;">Issue detected with Rider 1</strong><br>`;
     }
 
     timelineHTML += `</div>`;
@@ -100,12 +99,8 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
 
   let resultHTML = timelineHTML;
   resultHTML += `<h5>Summary:</h5>`;
-  if (totalDispatchingTime > 0) {
-    resultHTML += `<p>Total Dispatching Time: ${totalDispatchingTime} mins</p>`;
-  }
-  if (delays.length > 0) {
-    resultHTML += `<p>Delays: ${delays.join(", ")} mins</p>`;
-  }
+  if (totalDispatchingTime > 0) resultHTML += `<p>Total Dispatching Time: ${totalDispatchingTime} mins</p>`;
+  if (delays.length > 0) resultHTML += `<p>Delays: ${delays.join(", ")} mins</p>`;
   resultHTML += `<p><strong>Cancellation Reason:</strong> <span id="reasonText">${cancellationReason}</span></p>`;
 
   if (cancellationReason === "Late Delivery") {
