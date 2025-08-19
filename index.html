@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -33,12 +32,24 @@
     <div id="ridersContainer" class="mb-3">
       <h5>Riders</h5>
       <div class="rider border rounded p-3 mb-2">
-        <label>Queued Time: <input type="time" class="form-control queued"></label>
-        <label>Accepted Time: <input type="time" class="form-control accepted"></label>
-        <label>Committed Pickup Time: <input type="time" class="form-control committed"></label>
-        <label>Near Pickup Time: <input type="time" class="form-control nearpickup"></label>
-        <label>Picked Up Time: <input type="time" class="form-control pickedup"></label>
-        <label>Est. Dropoff Departure: <input type="time" class="form-control dropoff"></label>
+        <label>Queued Time: 
+          <input type="text" placeholder="0:00 AM/PM" class="form-control queued">
+        </label>
+        <label>Accepted Time: 
+          <input type="text" placeholder="0:00 AM/PM" class="form-control accepted">
+        </label>
+        <label>Committed Pickup Time: 
+          <input type="text" placeholder="00:00 AM/PM" class="form-control committed">
+        </label>
+        <label>Near Pickup Time: 
+          <input type="text" placeholder="0:00 AM/PM" class="form-control nearpickup">
+        </label>
+        <label>Picked Up Time: 
+          <input type="text" placeholder="0:00 AM/PM" class="form-control pickedup">
+        </label>
+        <label>Est. Dropoff Departure: 
+          <input type="text" placeholder="00:00 AM/PM Estimated dropoff" class="form-control dropoff">
+        </label>
       </div>
     </div>
 
@@ -46,7 +57,7 @@
 
     <div class="mb-3">
       <label class="form-label">Current Time (at cancellation):</label>
-      <input type="time" id="currentTime" class="form-control">
+      <input type="text" id="currentTime" placeholder="00:00:00 AM/PM" class="form-control">
     </div>
 
     <button id="calculateBtn" class="btn btn-primary">Calculate</button>
