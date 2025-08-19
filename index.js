@@ -91,13 +91,26 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
 
         // Preparation Delay حسب Committed / Near Pickup
         let preparationDelay = 0;
-        if (committed && pickedup && diffMinutes(committed, pickedup) > 0) {
+        if (nearpickup && committed) {
+            if (diffMinutes(nearpickup, committed) < 0) {
+                // السائق وصل قبل Committed → نحسب التحضير من Committed إلى Picked Up
+                if (pickedup && diffMinutes(committed, pickedup) > 0) {
+                    preparationDelay = diffMinutes(committed, pickedup);
+                    groupedDelays["Preparation Delay"] += preparationDelay;
+                }
+            } else {
+                // السائق وصل بعد Committed → نحسب التحضير من Near Pickup إلى Picked Up
+                if (pickedup && diffMinutes(nearpickup, pickedup) > 0) {
+                    preparationDelay = diffMinutes(nearpickup, pickedup);
+                    groupedDelays["Preparation Delay"] += preparationDelay;
+                }
+            }
+        } else if (committed && pickedup && diffMinutes(committed, pickedup) > 0) {
+            // الحالة التقليدية إذا Near Pickup غير متوفرة
             preparationDelay = diffMinutes(committed, pickedup);
             groupedDelays["Preparation Delay"] += preparationDelay;
-        } else if (nearpickup && pickedup && diffMinutes(nearpickup, pickedup) > 0) {
-            preparationDelay = diffMinutes(nearpickup, pickedup);
-            groupedDelays["Preparation Delay"] += preparationDelay;
         }
+
         if (preparationDelay > 0) timelineHTML += `<em>Preparation Delay: ${preparationDelay} mins</em><br>`;
 
         // Rider Delay
