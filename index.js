@@ -1,6 +1,5 @@
 function diffMinutes(startTime, endTime) {
     const today = new Date();
-
     if (!startTime || !endTime) return 0;
 
     const [startHourMin, startPeriod] = startTime.split(' ');
@@ -55,8 +54,6 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
     const currentTimeInput = document.getElementById("currentTime").value;
     const riderReachable = document.getElementById("riderReachable").value;
 
-    let totalDispatchingTime = 0;
-    let delays = [];
     let groupedDelays = { "Dispatching Delay": 0, "Rider Delay": 0, "Preparation Delay": 0 };
     let timelineHTML = "<h5>Timeline:</h5>";
     let firstRiderIssue = false;
@@ -80,35 +77,39 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
         if (pickedup) timelineHTML += `Picked Up: ${pickedup}<br>`;
         if (dropoff) timelineHTML += `Est. Dropoff Departure: ${dropoff}<br>`;
 
+        // Dispatching Delay
         if (queued && accepted) {
             let dispatchTime = diffMinutes(queued, accepted);
+            groupedDelays["Dispatching Delay"] += dispatchTime;
+
+            // Preparation Delay حسب KB
             if (vertical === "NFV" && scheduled) {
                 let prepTime = diffMinutes(scheduled, queued);
                 if (prepTime > 0) groupedDelays["Preparation Delay"] += prepTime;
-                groupedDelays["Dispatching Delay"] += dispatchTime;
-            } else {
-                groupedDelays["Dispatching Delay"] += dispatchTime;
             }
-            totalDispatchingTime += dispatchTime;
         }
 
-        if ((committed && pickedup) || (nearpickup && pickedup)) {
-            let d = committed && pickedup ? diffMinutes(committed, pickedup) : diffMinutes(nearpickup, pickedup);
-            delays.push(d);
-            groupedDelays["Rider Delay"] += d;
+        // Preparation Delay حسب Committed / Near Pickup
+        let preparationDelay = 0;
+        if (committed && pickedup && diffMinutes(committed, pickedup) > 0) {
+            preparationDelay = diffMinutes(committed, pickedup);
+            groupedDelays["Preparation Delay"] += preparationDelay;
+        } else if (nearpickup && pickedup && diffMinutes(nearpickup, pickedup) > 0) {
+            preparationDelay = diffMinutes(nearpickup, pickedup);
+            groupedDelays["Preparation Delay"] += preparationDelay;
+        }
+        if (preparationDelay > 0) timelineHTML += `<em>Preparation Delay: ${preparationDelay} mins</em><br>`;
+
+        // Rider Delay
+        if (pickedup && currentTimeInput) {
+            let currentDelay = diffMinutes(pickedup, currentTimeInput);
+            if (currentDelay > 0) groupedDelays["Rider Delay"] += currentDelay;
         }
 
+        // Driving Time
         if (dropoff && pickedup) {
             let driving = diffMinutes(pickedup, dropoff);
             if (driving >= 0) timelineHTML += `<em>Driving Time: ${driving} mins</em><br>`;
-        }
-
-        if (pickedup && currentTimeInput) {
-            let currentDelay = diffMinutes(pickedup, currentTimeInput);
-            if (currentDelay > 0) {
-                delays.push(currentDelay);
-                groupedDelays["Rider Delay"] += currentDelay;
-            }
         }
 
         if (index === 0 && ((accepted && !pickedup) || (queued && !accepted))) {
