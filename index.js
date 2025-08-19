@@ -2,12 +2,12 @@ document.getElementById("addRiderBtn").addEventListener("click", () => {
   const riderDiv = document.createElement("div");
   riderDiv.classList.add("rider", "border", "rounded", "p-3", "mb-2");
   riderDiv.innerHTML = `
-    <label>Queued Time: <input type="time" class="form-control queued"></label>
-    <label>Accepted Time: <input type="time" class="form-control accepted"></label>
-    <label>Committed Pickup Time: <input type="time" class="form-control committed"></label>
-    <label>Near Pickup Time: <input type="time" class="form-control nearpickup"></label>
-    <label>Picked Up Time: <input type="time" class="form-control pickedup"></label>
-    <label>Est. Dropoff Departure: <input type="time" class="form-control dropoff"></label>
+    <label>Queued Time: <input type="text" placeholder="0:00 AM/PM" class="form-control queued"></label>
+    <label>Accepted Time: <input type="text" placeholder="0:00 AM/PM" class="form-control accepted"></label>
+    <label>Committed Pickup Time: <input type="text" placeholder="00:00 AM/PM" class="form-control committed"></label>
+    <label>Near Pickup Time: <input type="text" placeholder="0:00 AM/PM" class="form-control nearpickup"></label>
+    <label>Picked Up Time: <input type="text" placeholder="0:00 AM/PM" class="form-control pickedup"></label>
+    <label>Est. Dropoff Departure: <input type="text" placeholder="00:00 AM/PM Estimated dropoff" class="form-control dropoff"></label>
   `;
   document.getElementById("ridersContainer").appendChild(riderDiv);
 });
@@ -87,7 +87,6 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
   else if (riderReachable === "no") cancellationReason = "Rider Unreachable";
   else cancellationReason = "Preparation Delay";
 
-  // 🔹 الشرط الجديد: لو السائق Near Pickup و committed متأخر
   let lastRider = riders[riders.length - 1];
   let lastStateIsNearPickup = lastRider.querySelector(".nearpickup").value && !lastRider.querySelector(".pickedup").value;
   let committedTime = lastRider.querySelector(".committed").value;
@@ -107,7 +106,6 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
   if (delays.length > 0) resultHTML += `<p>Delays: ${delays.join(", ")} mins</p>`;
   resultHTML += `<p><strong>Cancellation Reason:</strong> <span id="reasonText">${cancellationReason}</span></p>`;
 
-  // 🔹 زرار التبديل يظهر بس في الحالة دي
   if (toggleAllowed) {
     resultHTML += `<button id="toggleReasonBtn" class="btn btn-warning btn-sm mt-2">Toggle Reason</button>`;
   }
@@ -127,11 +125,25 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
   }
 });
 
+function parseTime(timeStr) {
+  if (!timeStr) return null;
+  let parts = timeStr.trim().split(" ");
+  let timePart = parts[0];
+  let ampm = parts[1] ? parts[1].toUpperCase() : null;
+
+  let [h, m, s] = timePart.split(":").map(Number);
+  if (isNaN(s)) s = 0;
+
+  if (ampm === "PM" && h < 12) h += 12;
+  if (ampm === "AM" && h === 12) h = 0;
+
+  return h * 60 + m + (s / 60);
+}
+
 function diffMinutes(start, end) {
-  const [sh, sm] = start.split(":").map(Number);
-  const [eh, em] = end.split(":").map(Number);
-  let startMinutes = sh * 60 + sm;
-  let endMinutes = eh * 60 + em;
+  let startMinutes = parseTime(start);
+  let endMinutes = parseTime(end);
+  if (startMinutes == null || endMinutes == null) return 0;
   if (endMinutes < startMinutes) endMinutes += 24 * 60;
-  return endMinutes - startMinutes;
+  return Math.round(endMinutes - startMinutes);
 }
