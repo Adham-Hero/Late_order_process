@@ -22,7 +22,6 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
   let timelineHTML = "<h5>Timeline:</h5>";
   const currentTimeInput = document.getElementById("currentTime").value;
 
-  // Grouped delays
   let groupedDelays = {
     "Dispatching Delay": 0,
     "Rider Delay": 0,
@@ -80,7 +79,6 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
       timelineHTML += `<strong style="color:red;">Issue detected with Rider 1</strong><br>`;
     }
 
-    // Preparation delay if Near Pickup before committed and current time passed committed
     if (committed && nearpickup && currentTimeInput) {
       let committedDelay = diffMinutes(committed, currentTimeInput);
       if (committedDelay > 0 && !pickedup) {
@@ -88,10 +86,23 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
       }
     }
 
+    if (index < riders.length - 1) {
+      let nextRider = riders[index + 1];
+      let nextQueued = nextRider.querySelector(".queued").value;
+      let lastTime = dropoff || pickedup || nearpickup || committed || accepted || queued;
+
+      if (lastTime && nextQueued) {
+        let gap = diffMinutes(lastTime, nextQueued);
+        if (gap > 0) {
+          groupedDelays["Rider Delay"] += gap;
+          timelineHTML += `<em style="color:orange;">Gap until Rider ${index + 2} queued: ${gap} mins (counted as Rider Delay)</em><br>`;
+        }
+      }
+    }
+
     timelineHTML += `</div>`;
   });
 
-  // Biggest delay
   let biggestDelayType = "";
   let biggestDelayValue = 0;
   Object.keys(groupedDelays).forEach(type => {
@@ -101,7 +112,6 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
     }
   });
 
-  // Add grouped delays to Timeline (highlight biggest)
   Object.keys(groupedDelays).forEach(type => {
     if (groupedDelays[type] > 0) {
       timelineHTML += `<em style="${biggestDelayType === type ? 'color:red; font-weight:bold;' : ''}">
@@ -110,11 +120,9 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
     }
   });
 
-  // Cancellation reason
   if (hasMultipleRiders && firstRiderIssue) cancellationReason = "Order picked up/delivered by another rider";
   else cancellationReason = biggestDelayType || "Preparation Delay";
 
-  // Summary
   let resultHTML = timelineHTML;
   resultHTML += `<h5>Summary:</h5>`;
   Object.keys(groupedDelays).forEach(type => {
