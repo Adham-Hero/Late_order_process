@@ -1,31 +1,47 @@
-function diffMinutes(start, end) {
-    const [startH, startM, startP] = parseTime(start);
-    const [endH, endM, endP] = parseTime(end);
-    let startTotal = startH * 60 + startM + (startP === "PM" && startH !== 12 ? 720 : 0);
-    let endTotal = endH * 60 + endM + (endP === "PM" && endH !== 12 ? 720 : 0);
-    return endTotal - startTotal;
+function diffMinutes(startTime, endTime) {
+    const today = new Date();
+    if (!startTime || !endTime) return 0;
+    const [startHourMin, startPeriod] = startTime.split(' ');
+    const [endHourMin, endPeriod] = endTime.split(' ');
+    let [startHour, startMin] = startHourMin.split(':').map(Number);
+    let [endHour, endMin] = endHourMin.split(':').map(Number);
+    if (startPeriod.toUpperCase() === 'PM' && startHour !== 12) startHour += 12;
+    if (startPeriod.toUpperCase() === 'AM' && startHour === 12) startHour = 0;
+    if (endPeriod.toUpperCase() === 'PM' && endHour !== 12) endHour += 12;
+    if (endPeriod.toUpperCase() === 'AM' && endHour === 12) endHour = 0;
+    const startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), startHour, startMin);
+    const endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), endHour, endMin);
+    return Math.floor((endDate - startDate) / 60000);
 }
 
-function parseTime(timeStr) {
-    if (!timeStr) return [0, 0, "AM"];
-    let [time, period] = timeStr.split(" ");
-    let [hours, minutes] = time.split(":").map(Number);
-    if (hours === 12) hours = 0; // handle 12 AM/PM
-    return [hours, minutes, period];
-}
+document.getElementById("addRiderBtn").addEventListener("click", () => {
+    const riderDiv = document.createElement("div");
+    riderDiv.classList.add("rider", "border", "rounded", "p-3", "mb-2");
+    riderDiv.innerHTML = `
+        Queued Time: <input class="queued" type="text">
+        Accepted Time: <input class="accepted" type="text">
+        Committed Pickup Time: <input class="committed" type="text">
+        Near Pickup Time: <input class="nearpickup" type="text">
+        Picked Up Time: <input class="pickedup" type="text">
+        Est. Dropoff Departure: <input class="dropoff" type="text">
+    `;
+    const vertical = document.getElementById("vertical").value;
+    const ridersContainer = document.getElementById("ridersContainer");
+    ridersContainer.appendChild(riderDiv);
+    const riders = document.querySelectorAll(".rider");
+    if (vertical === "NFV" && riders.length === 1 && !riderDiv.querySelector(".scheduled")) {
+        const scheduledInput = document.createElement("label");
+        scheduledInput.innerHTML = `Scheduled Time: <input class="scheduled" type="text">`;
+        riderDiv.insertBefore(scheduledInput, riderDiv.firstChild);
+    }
+});
 
 document.getElementById("calculateBtn").addEventListener("click", () => {
     const vertical = document.getElementById("vertical").value;
     const riders = document.querySelectorAll(".rider");
     const currentTimeInput = document.getElementById("currentTime").value;
     const riderReachable = document.getElementById("riderReachable").value;
-
-    let groupedDelays = {
-        "Dispatching Delay": 0,
-        "Rider Delay": 0,
-        "Preparation Delay": 0
-    };
-
+    let groupedDelays = { "Dispatching Delay": 0, "Rider Delay": 0, "Preparation Delay": 0 };
     let timelineHTML = "<h5>Timeline:</h5>";
     let firstRiderIssue = false;
     let hasMultipleRiders = riders.length > 1;
@@ -39,30 +55,25 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
         const dropoff = rider.querySelector(".dropoff")?.value;
         let scheduled = vertical === "NFV" && index === 0 ? rider.querySelector(".scheduled")?.value : null;
 
-        timelineHTML += `<div class="border rounded p-2 mb-2"><strong>Rider ${index + 1}:</strong><br>`;
-        if (scheduled) timelineHTML += `Scheduled: ${scheduled}<br>`;
-        if (queued) timelineHTML += `Queued: ${queued}<br>`;
-        if (accepted) timelineHTML += `Accepted: ${accepted}<br>`;
-        if (committed) timelineHTML += `Committed Pickup: ${committed}<br>`;
-        if (nearpickup) timelineHTML += `Near Pickup: ${nearpickup}<br>`;
-        if (pickedup) timelineHTML += `Picked Up: ${pickedup}<br>`;
-        if (dropoff) timelineHTML += `Est. Dropoff Departure: ${dropoff}<br>`;
+        timelineHTML += `**Rider ${index + 1}:**`;
+        if (scheduled) timelineHTML += `Scheduled: ${scheduled}`;
+        if (queued) timelineHTML += `Queued: ${queued}`;
+        if (accepted) timelineHTML += `Accepted: ${accepted}`;
+        if (committed) timelineHTML += `Committed Pickup: ${committed}`;
+        if (nearpickup) timelineHTML += `Near Pickup: ${nearpickup}`;
+        if (pickedup) timelineHTML += `Picked Up: ${pickedup}`;
+        if (dropoff) timelineHTML += `Est. Dropoff Departure: ${dropoff}`;
 
-        // Dispatching Delay
         if (queued && accepted) {
             let dispatchTime = diffMinutes(queued, accepted);
             groupedDelays["Dispatching Delay"] += dispatchTime;
-
             if (vertical === "NFV" && scheduled) {
                 let prepTime = diffMinutes(scheduled, queued);
                 if (prepTime > 0) groupedDelays["Preparation Delay"] += prepTime;
             }
         }
 
-        // Preparation & Rider Delay
         let preparationDelay = 0;
-        let riderDelay = 0;
-
         if (nearpickup && committed) {
             if (diffMinutes(nearpickup, committed) < 0) {
                 if (pickedup && diffMinutes(committed, pickedup) > 0) {
@@ -70,9 +81,6 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
                     groupedDelays["Preparation Delay"] += preparationDelay;
                 }
             } else {
-                riderDelay = diffMinutes(committed, nearpickup);
-                if (riderDelay > 0) groupedDelays["Rider Delay"] += riderDelay;
-
                 if (pickedup && diffMinutes(nearpickup, pickedup) > 0) {
                     preparationDelay = diffMinutes(nearpickup, pickedup);
                     groupedDelays["Preparation Delay"] += preparationDelay;
@@ -83,20 +91,24 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
             groupedDelays["Preparation Delay"] += preparationDelay;
         }
 
-        if (preparationDelay > 0) timelineHTML += `<em>Preparation Delay: ${preparationDelay} mins</em><br>`;
-        if (riderDelay > 0) timelineHTML += `<em>Rider Delay: ${riderDelay} mins</em><br>`;
+        if (preparationDelay > 0) timelineHTML += `*Preparation Delay: ${preparationDelay} mins*`;
 
-        // Rider Delay vs current time
         if (pickedup && currentTimeInput) {
             let currentDelay = diffMinutes(pickedup, currentTimeInput);
             if (currentDelay > 0) groupedDelays["Rider Delay"] += currentDelay;
         }
 
-        if (index === 0 && ((accepted && !pickedup) || (queued && !accepted))) {
-            firstRiderIssue = true;
+        if (dropoff && pickedup) {
+            let driving = diffMinutes(pickedup, dropoff);
+            if (driving >= 0) timelineHTML += `*Driving Time: ${driving} mins*`;
         }
 
-        timelineHTML += `</div>`;
+        if (index === 0 && ((accepted && !pickedup) || (queued && !accepted))) {
+            firstRiderIssue = true;
+            timelineHTML += `**Issue detected with Rider 1**`;
+        }
+
+        timelineHTML += `\n`;
     });
 
     const delayMapping = {
@@ -105,7 +117,6 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
         "Preparation Delay": "Preparation Delay"
     };
 
-    // تحديد أكبر تأخير
     let biggestDelayType = "";
     let biggestDelayValue = 0;
     Object.keys(groupedDelays).forEach(type => {
@@ -115,30 +126,26 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
         }
     });
 
-    // تحديد سبب الإلغاء
-    let firstRiderCausedBiggestDelay = (biggestDelayType === "Rider Delay") && firstRiderIssue;
+    let resultHTML = timelineHTML + `\n##### Summary:\n`;
+    Object.keys(groupedDelays).forEach(type => {
+        if (groupedDelays[type] > 0) {
+            resultHTML += `\n${delayMapping[type]}: ${groupedDelays[type]} mins\n`;
+        }
+    });
+
+    if (biggestDelayType) {
+        resultHTML += `\n**Biggest Delay:** ${delayMapping[biggestDelayType]} = ${biggestDelayValue} mins\n`;
+    }
 
     let cancellationReason = "";
     if (riderReachable === "no" && biggestDelayType === "Rider Delay") {
         cancellationReason = "Rider Unreachable";
-    } else if (hasMultipleRiders && biggestDelayType === "Rider Delay" && firstRiderCausedBiggestDelay) {
+    } else if (hasMultipleRiders && firstRiderIssue) {
         cancellationReason = "Order picked up/delivered by another rider";
     } else {
         cancellationReason = delayMapping[biggestDelayType] || "Preparation Delay";
     }
 
-    // النتيجة
-    let resultHTML = timelineHTML + `<h5>Summary:</h5>`;
-    Object.keys(groupedDelays).forEach(type => {
-        if (groupedDelays[type] > 0) {
-            resultHTML += `<p style="${biggestDelayType === type ? 'color:red; font-weight:bold;' : ''}">
-                ${delayMapping[type]}: ${groupedDelays[type]} mins
-            </p>`;
-        }
-    });
-
-    resultHTML += `<p><strong>Biggest Delay:</strong> ${delayMapping[biggestDelayType]} = ${biggestDelayValue} mins</p>`;
-    resultHTML += `<p><strong>Cancellation Reason:</strong> ${cancellationReason}</p>`;
-
+    resultHTML += `\n**Cancellation Reason:** ${cancellationReason}\n`;
     document.getElementById("result").innerHTML = resultHTML;
 });
