@@ -1,4 +1,3 @@
-<script>
 function diffMinutes(startTime, endTime) {
     if (!startTime || !endTime) return 0;
     const parseTime = (t) => {
@@ -190,4 +189,3 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
     resultHTML += `<b>Cancellation Reason:</b> ${cancellationReason}<br>`;
     document.getElementById("result").innerHTML = resultHTML;
 });
-</script>
