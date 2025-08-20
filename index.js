@@ -44,7 +44,6 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
     let groupedDelays = { "Dispatching Delay": 0, "Rider Delay": 0, "Preparation Delay": 0 };
     let timelineHTML = "<h5>Timeline:</h5>";
     let firstRiderIssue = false;
-    let hasMultipleRiders = riders.length > 1;
 
     riders.forEach((rider, index) => {
         const queued = rider.querySelector(".queued")?.value;
@@ -55,15 +54,16 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
         const dropoff = rider.querySelector(".dropoff")?.value;
         let scheduled = vertical === "NFV" && index === 0 ? rider.querySelector(".scheduled")?.value : null;
 
-        timelineHTML += `**Rider ${index + 1}:**`;
-        if (scheduled) timelineHTML += `Scheduled: ${scheduled}`;
-        if (queued) timelineHTML += `Queued: ${queued}`;
-        if (accepted) timelineHTML += `Accepted: ${accepted}`;
-        if (committed) timelineHTML += `Committed Pickup: ${committed}`;
-        if (nearpickup) timelineHTML += `Near Pickup: ${nearpickup}`;
-        if (pickedup) timelineHTML += `Picked Up: ${pickedup}`;
-        if (dropoff) timelineHTML += `Est. Dropoff Departure: ${dropoff}`;
+        timelineHTML += `**Rider ${index + 1}:** `;
+        if (scheduled) timelineHTML += `Scheduled: ${scheduled} `;
+        if (queued) timelineHTML += `Queued: ${queued} `;
+        if (accepted) timelineHTML += `Accepted: ${accepted} `;
+        if (committed) timelineHTML += `Committed Pickup: ${committed} `;
+        if (nearpickup) timelineHTML += `Near Pickup: ${nearpickup} `;
+        if (pickedup) timelineHTML += `Picked Up: ${pickedup} `;
+        if (dropoff) timelineHTML += `Est. Dropoff Departure: ${dropoff} `;
 
+        // Dispatching Delay
         if (queued && accepted) {
             let dispatchTime = diffMinutes(queued, accepted);
             groupedDelays["Dispatching Delay"] += dispatchTime;
@@ -73,6 +73,7 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
             }
         }
 
+        // Preparation Delay
         let preparationDelay = 0;
         if (nearpickup && committed) {
             if (diffMinutes(nearpickup, committed) < 0) {
@@ -91,21 +92,37 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
             groupedDelays["Preparation Delay"] += preparationDelay;
         }
 
-        if (preparationDelay > 0) timelineHTML += `*Preparation Delay: ${preparationDelay} mins*`;
+        if (preparationDelay > 0) timelineHTML += `*Preparation Delay: ${preparationDelay} mins* `;
 
+        // Rider Delay
         if (pickedup && currentTimeInput) {
             let currentDelay = diffMinutes(pickedup, currentTimeInput);
             if (currentDelay > 0) groupedDelays["Rider Delay"] += currentDelay;
         }
 
+        // Driving Time
         if (dropoff && pickedup) {
             let driving = diffMinutes(pickedup, dropoff);
-            if (driving >= 0) timelineHTML += `*Driving Time: ${driving} mins*`;
+            if (driving >= 0) timelineHTML += `*Driving Time: ${driving} mins* `;
+        }
+
+        // Extra Rider Delay بين السائق الأول والثاني
+        if (riders.length > 1 && index === 0) {
+            const nextRider = riders[1];
+            const nextAssignedTime = nextRider.querySelector(".queued")?.value || nextRider.querySelector(".accepted")?.value;
+            const lastTimeFirstRider = pickedup || nearpickup || committed || accepted || queued;
+            if (lastTimeFirstRider && nextAssignedTime) {
+                let extraDelay = diffMinutes(lastTimeFirstRider, nextAssignedTime);
+                if (extraDelay > 0) {
+                    groupedDelays["Rider Delay"] += extraDelay;
+                    timelineHTML += `*Extra Rider Delay before second rider assigned: ${extraDelay} mins* `;
+                }
+            }
         }
 
         if (index === 0 && ((accepted && !pickedup) || (queued && !accepted))) {
             firstRiderIssue = true;
-            timelineHTML += `**Issue detected with Rider 1**`;
+            timelineHTML += `**Issue detected with Rider 1** `;
         }
 
         timelineHTML += `\n`;
@@ -133,16 +150,17 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
         }
     });
 
-    if (biggestDelayType) {
-        resultHTML += `\n**Biggest Delay:** ${delayMapping[biggestDelayType]} = ${biggestDelayValue} mins\n`;
-    }
-
+    // تحديد سبب الإلغاء
     let cancellationReason = "";
-    if (riderReachable === "no" && biggestDelayType === "Rider Delay") {
-        cancellationReason = "Rider Unreachable";
-    } else if (hasMultipleRiders && firstRiderIssue) {
-        cancellationReason = "Order picked up/delivered by another rider";
-    } else {
+    if (riders.length > 1) {
+        if (firstRiderIssue) {
+            cancellationReason = "Picked up by another rider";
+        } else if (biggestDelayType === "Rider Delay") {
+            cancellationReason = "Late Delivery";
+        } else {
+            cancellationReason = delayMapping[biggestDelayType] || "Preparation Delay";
+        }
+    } else { // سائق واحد
         cancellationReason = delayMapping[biggestDelayType] || "Preparation Delay";
     }
 
