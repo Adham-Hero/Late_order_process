@@ -189,5 +189,3 @@ document.getElementById("result").innerHTML = resultHTML;
 
 });
 
-أضف التعديلات هنا
-
