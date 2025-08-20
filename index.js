@@ -16,26 +16,69 @@ function diffMinutes(startTime, endTime) {
 
 document.getElementById("addRiderBtn").addEventListener("click", () => {
     const riderDiv = document.createElement("div");
-    riderDiv.classList.add("rider", "border", "rounded", "p-3", "mb-2");
+    riderDiv.classList.add("rider", "border", "rounded", "p-3", "mb-3", "bg-white", "shadow-sm");
+    
     riderDiv.innerHTML = `
-        Queued Time: <input class="queued" type="text">
-        Accepted Time: <input class="accepted" type="text">
-        Committed Pickup Time: <input class="committed" type="text">
-        Near Pickup Time: <input class="nearpickup" type="text">
-        Picked Up Time: <input class="pickedup" type="text">
-        Est. Dropoff Departure: <input class="dropoff" type="text">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0">Rider ${document.querySelectorAll('.rider').length + 1}</h6>
+            <button type="button" class="btn btn-sm btn-danger remove-rider">Delete</button>
+        </div>
+        <div class="row g-2">
+            <div class="col-md-4">
+                <label>Queued Time: 
+                    <input type="text" placeholder="0:00 AM/PM" class="form-control queued">
+                </label>
+            </div>
+            <div class="col-md-4">
+                <label>Accepted Time: 
+                    <input type="text" placeholder="0:00 AM/PM" class="form-control accepted">
+                </label>
+            </div>
+            <div class="col-md-4">
+                <label>Committed Pickup Time: 
+                    <input type="text" placeholder="0:00 AM/PM" class="form-control committed">
+                </label>
+            </div>
+            <div class="col-md-4">
+                <label>Near Pickup Time: 
+                    <input type="text" placeholder="0:00 AM/PM" class="form-control nearpickup">
+                </label>
+            </div>
+            <div class="col-md-4">
+                <label>Picked Up Time: 
+                    <input type="text" placeholder="0:00 AM/PM" class="form-control pickedup">
+                </label>
+            </div>
+            <div class="col-md-4">
+                <label>Est. Dropoff Departure: 
+                    <input type="text" placeholder="0:00 AM/PM" class="form-control dropoff">
+                </label>
+            </div>
+        </div>
     `;
+
     const vertical = document.getElementById("vertical").value;
     const ridersContainer = document.getElementById("ridersContainer");
     ridersContainer.appendChild(riderDiv);
+
+    // إضافة Scheduled Time للسائق الأول NFV فقط
     const riders = document.querySelectorAll(".rider");
     if (vertical === "NFV" && riders.length === 1 && !riderDiv.querySelector(".scheduled")) {
-        const scheduledInput = document.createElement("label");
-        scheduledInput.innerHTML = `Scheduled Time: <input class="scheduled" type="text">`;
+        const scheduledInput = document.createElement("div");
+        scheduledInput.classList.add("mt-2");
+        scheduledInput.innerHTML = `
+            <label>Scheduled Time: 
+                <input class="form-control scheduled" type="text" placeholder="0:00 AM/PM">
+            </label>
+        `;
         riderDiv.insertBefore(scheduledInput, riderDiv.firstChild);
     }
-});
 
+    // حدث حذف السائق عند الضغط على زر Delete
+    riderDiv.querySelector(".remove-rider").addEventListener("click", () => {
+        riderDiv.remove();
+    });
+});
 document.getElementById("calculateBtn").addEventListener("click", () => {
     const vertical = document.getElementById("vertical").value;
     const riders = document.querySelectorAll(".rider");
