@@ -1,3 +1,4 @@
+<script>
 function diffMinutes(startTime, endTime) {
     if (!startTime || !endTime) return 0;
     const parseTime = (t) => {
@@ -112,6 +113,14 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
             }
         }
 
+        // Rider ongoing delay from Picked Up → Current Time (حتى لو فيه Dropoff)
+        if (pickedup && currentTimeInput) {
+            let ongoingDelay = diffMinutes(pickedup, currentTimeInput);
+            if (ongoingDelay > 0) {
+                riderDelay += ongoingDelay; // نجمعه مع Rider Delay الأصلي
+            }
+        }
+
         groupedDelays["Rider Delay"] += riderDelay;
         groupedDelays["Preparation Delay"] += prepDelay;
 
@@ -181,3 +190,4 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
     resultHTML += `<b>Cancellation Reason:</b> ${cancellationReason}<br>`;
     document.getElementById("result").innerHTML = resultHTML;
 });
+</script>
