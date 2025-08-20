@@ -213,5 +213,4 @@ document.getElementById("result").innerHTML = resultHTML;
 
 });
 
-اشرح لي منطق الحساب
 
