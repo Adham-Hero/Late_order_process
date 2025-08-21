@@ -121,10 +121,14 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
         }
 
         groupedDelays["Rider Delay"] += riderDelay;
-        groupedDelays["Preparation Delay"] += prepDelay;
+
+        // نحسب Preparation Delay فقط للرايدر الأول
+        if (index === 0) {
+            groupedDelays["Preparation Delay"] += prepDelay;
+        }
 
         if (riderDelay > 0) timelineHTML += `<span style="color:red;">Rider Delay: ${riderDelay} mins</span> | `;
-        if (prepDelay > 0) timelineHTML += `<span style="color:orange;">Preparation Delay: ${prepDelay} mins</span> | `;
+        if (prepDelay > 0 && index === 0) timelineHTML += `<span style="color:orange;">Preparation Delay: ${prepDelay} mins</span> | `;
 
         // Driving Time
         if (dropoff && pickedup) {
