@@ -116,15 +116,29 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
         if (pickedup && currentTimeInput) {
             let ongoingDelay = diffMinutes(pickedup, currentTimeInput);
             if (ongoingDelay > 0) {
-                riderDelay += ongoingDelay; // نجمعه مع Rider Delay الأصلي
+                riderDelay += ongoingDelay; 
             }
         }
 
         groupedDelays["Rider Delay"] += riderDelay;
 
-        // نحسب Preparation Delay فقط للرايدر الأول
+        // حساب Preparation Delay فقط للرايدر الأول مع شرط الـ reassignment
         if (index === 0) {
-            groupedDelays["Preparation Delay"] += prepDelay;
+            let hasSecondRider = riders.length > 1;  
+            let committedTime = committed ? committed : null;  
+            let currentTime = currentTimeInput ? currentTimeInput : null;  
+
+            let skipPrep = false;  
+            if (hasSecondRider && committedTime && currentTime) {
+                // لو الوقت الحالي عدى الـ committed مع وجود سواق تاني → تجاهل تأخير التحضير
+                if (diffMinutes(committedTime, currentTime) < 0) {
+                    skipPrep = true;
+                }
+            }
+
+            if (!skipPrep) {
+                groupedDelays["Preparation Delay"] += prepDelay;
+            }
         }
 
         if (riderDelay > 0) timelineHTML += `<span style="color:red;">Rider Delay: ${riderDelay} mins</span> | `;
