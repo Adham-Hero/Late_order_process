@@ -112,11 +112,11 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
             }
         }
 
-        // Rider ongoing delay from Picked Up → Current Time (حتى لو فيه Dropoff)
-        if (pickedup && currentTimeInput) {
-            let ongoingDelay = diffMinutes(pickedup, currentTimeInput);
+        // Rider ongoing delay يعتمد على Estimated Dropoff بدل PickedUp
+        if (dropoff && currentTimeInput) {
+            let ongoingDelay = diffMinutes(dropoff, currentTimeInput);
             if (ongoingDelay > 0) {
-                riderDelay += ongoingDelay; 
+                riderDelay += ongoingDelay;
             }
         }
 
@@ -130,7 +130,6 @@ document.getElementById("calculateBtn").addEventListener("click", () => {
 
             let skipPrep = false;  
             if (hasSecondRider && committedTime && currentTime) {
-                // لو الوقت الحالي عدى الـ committed مع وجود سواق تاني → تجاهل تأخير التحضير
                 if (diffMinutes(committedTime, currentTime) < 0) {
                     skipPrep = true;
                 }
